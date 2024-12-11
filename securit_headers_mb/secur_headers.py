@@ -33,8 +33,6 @@ def validate_security_headers(url):
 
 if __name__ == "__main__":
 
-    print(security_headers_ptd_figlet)
-
     URL = input("[$] URL: ")
 
     security_results = validate_security_headers(URL)
