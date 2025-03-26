@@ -5,13 +5,20 @@ def analyze_pcap(file_path):
     print("[+] Analisando pacotes suspeitos no arquivo .pcap...")
 
     try:
-        capture = pyshark.FileCapture(file_path)
+        capture = pyshark.FileCapture(file_path, keep_packets=False)
         
-        # Detecta pacotes suspeitos utilizando portas comuns de ataque
+        portas_suspeitas = {'21', '23', '445'}
+        
         for packet in capture:
-            if hasattr(packet, 'tcp') and packet.tcp.dstport in ['21', '23', '445']:
-                print(f"[ALERTA] Porta suspeita detectada: {packet.tcp.dstport}")
-    
+            try:
+                if 'TCP' in packet and packet.tcp.dstport in portas_suspeitas:
+                    print(f"[ALERTA] Porta suspeita detectada: {packet.tcp.dstport} | IP origem: {packet.ip.src} -> destino: {packet.ip.dst}")
+            except AttributeError:
+                # Ignora pacotes que não possuem os atributos esperados
+                continue
+        
+        capture.close()
+
     except Exception as e:
         print(f"[-] Erro durante a análise: {e}")
 
