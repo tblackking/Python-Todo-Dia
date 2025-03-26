@@ -34,3 +34,11 @@ def restart_service(ip, username, password, service_name):
 
     except Exception as e:
         print(f"[-] Falha ao reiniciar o serviço: {e}")
+
+if __name__ == "__main__":
+    ip = input("Digite o endereço IP do servidor: ")
+    usuario = input("Digite o nome de usuário: ")
+    senha = input("Digite a senha: ")
+    servico = input("Digite o nome do serviço a ser reiniciado (ex: apache2, nginx, mysql): ")
+
+    restart_service(ip, usuario, senha, servico)
