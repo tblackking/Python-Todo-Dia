@@ -9,7 +9,7 @@ def smb_enum(ip, username, password, domain=''):
 
         print(f"[+] Compartilhamentos disponíveis em {ip}:")
         for share in conn.listShares():
-            print(f"  - {share['shi1_netname'].decode().strip()}")
+            print(f"  - {share.name}")
         conn.close()
 
     except Exception as e:
